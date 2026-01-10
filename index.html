@@ -3,14 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LeonovTrener Nutrition</title>
+    <title>LeonovTrener Funnel</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
             --primary: #007aff;
-            --bg: #var(--tg-theme-bg-color, #ffffff);
-            --text: #var(--tg-theme-text-color, #000000);
-            --secondary-bg: #var(--tg-theme-secondary-bg-color, #f5f5f5);
+            --bg: #ffffff;
+            --text: #000000;
+            --secondary-bg: #f5f5f5;
+            --gold: #FFD700;
         }
 
         body {
@@ -19,20 +20,58 @@
             color: var(--text);
             margin: 0;
             padding: 20px;
+            padding-bottom: 40px;
         }
 
-        h1, h2, h3 { text-align: center; margin-top: 0; }
+        /* Стили для экранов (страниц) */
+        .page { display: none; animation: fadeIn 0.3s; }
+        .active-page { display: block; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1, h2, h3 { text-align: center; }
+        h1 { color: var(--primary); margin-bottom: 10px; }
         
         .card {
             background: var(--secondary-bg);
-            padding: 15px;
-            border-radius: 12px;
+            padding: 20px;
+            border-radius: 16px;
             margin-bottom: 15px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
         }
 
-        label { display: block; margin-bottom: 5px; font-weight: 500; }
-        
+        /* Список преимуществ */
+        .benefits-list { list-style: none; padding: 0; }
+        .benefits-list li { margin-bottom: 15px; font-size: 15px; line-height: 1.5; }
+        .check { color: #2ecc71; font-weight: bold; margin-right: 5px; }
+
+        /* Кнопки */
+        .btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            font-size: 17px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 10px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            box-sizing: border-box;
+        }
+        .btn-primary { background-color: var(--primary); color: white; }
+        .btn-gold { 
+            background: linear-gradient(90deg, #FFD700 0%, #FFA500 100%); 
+            color: black;
+            box-shadow: 0 4px 15px rgba(255, 165, 0, 0.4);
+        }
+        .btn-outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); }
+
+        /* Формы */
         input, select {
             width: 100%;
             padding: 12px;
@@ -42,158 +81,129 @@
             box-sizing: border-box;
             font-size: 16px;
         }
+        label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 14px; }
 
-        /* Основная кнопка расчета */
-        .calc-btn {
-            width: 100%;
-            padding: 15px;
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-bottom: 10px;
-        }
-
-        /* Кнопка ПРОДАЖИ (Золотая) */
-        .premium-btn {
-            display: block;
-            width: 100%;
-            padding: 16px;
-            background: linear-gradient(90deg, #FFD700 0%, #FFA500 100%);
-            color: #000;
-            text-align: center;
-            text-decoration: none;
-            border-radius: 10px;
-            font-weight: 800;
-            font-size: 16px;
-            margin-top: 20px;
-            box-shadow: 0 4px 15px rgba(255, 165, 0, 0.4);
-            transition: transform 0.1s;
-            box-sizing: border-box; /* Чтобы padding не ломал ширину */
-        }
-        .premium-btn:active { transform: scale(0.98); }
-        .premium-subtext {
-            font-size: 13px; 
-            font-weight: normal; 
-            display: block; 
-            margin-top: 4px; 
-            opacity: 0.8;
-        }
-
-        .result-box { display: none; }
-
-        .macro-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 10px;
-            text-align: center;
-        }
-        
-        .macro-item {
+        /* Карточка еды */
+        .meal-card {
             background: #fff;
-            padding: 10px;
-            border-radius: 8px;
-            font-size: 14px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-
-        .meal-row {
-            display: flex;
-            justify-content: space-between;
-            border-bottom: 1px solid #e0e0e0;
-            padding: 10px 0;
-            font-size: 14px;
-        }
-        
-        .meal-type { font-weight: bold; color: var(--primary); width: 25%; }
-        .meal-name { width: 50%; }
-        .meal-weight { width: 25%; text-align: right; font-weight: 500; }
-
-        .day-nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            background: var(--secondary-bg);
-            padding: 10px;
+            padding: 15px;
             border-radius: 12px;
+            margin-bottom: 10px;
+            border-left: 4px solid var(--primary);
         }
-        .nav-btn {
-            width: 40px;
-            height: 40px;
-            border: none;
-            background: #ddd;
-            border-radius: 50%;
-            font-size: 20px;
-            cursor: pointer;
+        .meal-header { display: flex; justify-content: space-between; align-items: center; }
+        .meal-title { font-weight: bold; font-size: 16px; }
+        .meal-weight { font-weight: bold; color: var(--primary); }
+        .meal-recipe { font-size: 13px; color: #666; margin-top: 5px; font-style: italic; line-height: 1.4;}
+        
+        .swap-btn {
+            background: none; border: none; cursor: pointer; font-size: 18px; padding: 0 0 0 10px;
         }
+
+        .price-tag {
+            text-align: center;
+            font-size: 24px;
+            font-weight: 800;
+            margin: 20px 0;
+            color: var(--primary);
+        }
+
+        .macro-row { display: flex; justify-content: space-around; margin-bottom: 15px; text-align: center; }
+        .macro-box { background: #fff; padding: 10px; border-radius: 8px; width: 30%; font-size: 13px; }
+        .macro-val { font-weight: bold; font-size: 16px; display: block; }
     </style>
 </head>
 <body>
 
-    <h1 id="mainTitle">🍏 Составь рацион</h1>
-    
-    <div class="card" id="inputForm">
-        <label>Твой пол:</label>
-        <select id="gender"><option value="male">Мужской</option><option value="female">Женский</option></select>
+    <div id="page1" class="page active-page">
+        <div class="card">
+            <h1>👑 Индивидуальный план</h1>
+            <p style="text-align:center; opacity:0.7; font-size:14px;">от @LeonovTrener</p>
+            
+            <p>Это услуга для тех, кто хочет чёткий план питания, составленный с учётом целей и образа жизни.</p>
 
-        <label>Вес (кг):</label>
-        <input type="number" id="weight" placeholder="70">
+            <ul class="benefits-list">
+                <li><span class="check">✅</span> <b>Персональный план</b><br>Адаптирован под вас, без жёстких ограничений.</li>
+                <li><span class="check">✅</span> <b>Точный расчет КБЖУ</b><br>Баланс для похудения, массы или рельефа.</li>
+                <li><span class="check">✅</span> <b>Поддержка тренера</b><br>Ответы на вопросы в рамках тарифа.</li>
+            </ul>
 
-        <label>Рост (см):</label>
-        <input type="number" id="height" placeholder="175">
-
-        <label>Возраст:</label>
-        <input type="number" id="age" placeholder="25">
-
-        <label>Цель:</label>
-        <select id="goal">
-            <option value="lose">Похудение</option>
-            <option value="maintain">Поддержание</option>
-            <option value="gain">Набор массы</option>
-        </select>
-
-        <label>Активность:</label>
-        <select id="activity">
-            <option value="1.2">Сидячий</option>
-            <option value="1.375">Легкая (1-3 трен.)</option>
-            <option value="1.55">Средняя (3-5 трен.)</option>
-            <option value="1.725">Высокая (6-7 трен.)</option>
-        </select>
-
-        <button class="calc-btn" onclick="calculate()">🚀 Рассчитать бесплатно</button>
+            <div class="price-tag">3 000 ₽</div>
+            
+            <button class="btn btn-primary" onclick="goToPage('page2')">🔥 Рассчитать бесплатно<br><span style="font-size:12px; font-weight:normal">и получить демо-меню на 3 дня</span></button>
+        </div>
     </div>
 
-    <div class="result-box" id="result">
+    <div id="page2" class="page">
+        <h2>📊 Твои данные</h2>
+        <div class="card">
+            <label>Пол</label>
+            <select id="gender"><option value="male">Мужской</option><option value="female">Женский</option></select>
+            
+            <label>Вес (кг)</label>
+            <input type="number" id="weight" placeholder="70">
+            
+            <label>Рост (см)</label>
+            <input type="number" id="height" placeholder="175">
+            
+            <label>Возраст</label>
+            <input type="number" id="age" placeholder="25">
+            
+            <label>Цель</label>
+            <select id="goal">
+                <option value="lose">Похудение</option>
+                <option value="maintain">Поддержание</option>
+                <option value="gain">Набор массы</option>
+            </select>
+            
+            <label>Активность</label>
+            <select id="activity">
+                <option value="1.2">Сидячая работа</option>
+                <option value="1.375">1-3 тренировки</option>
+                <option value="1.55">3-5 тренировок</option>
+                <option value="1.725">Спортсмен</option>
+            </select>
+
+            <button class="btn btn-primary" onclick="calculateAndGo()">🚀 Создать рацион</button>
+            <button class="btn btn-outline" onclick="goToPage('page1')" style="margin-top:5px; border:none;">Назад</button>
+        </div>
+    </div>
+
+    <div id="page3" class="page">
+        <h3>🍽 Твой план на 3 дня</h3>
+        <p style="text-align: center; font-size: 13px; color: #666;">Нажми 🔄 чтобы заменить продукт</p>
         
-        <a href="https://t.me/leonov_vitaliy48" class="premium-btn">
-            👑 Индивидуальный план
-            <span class="premium-subtext">С поддержкой тренера — 3000₽</span>
-        </a>
-        
-        <div class="card" style="margin-top: 15px;">
-            <h2 style="margin-bottom: 5px;">Норма: <span id="totalCals">0</span> ккал</h2>
-            <div class="macro-grid">
-                <div class="macro-item">Белки<br><b><span id="protein">0</span>г</b></div>
-                <div class="macro-item">Жиры<br><b><span id="fat">0</span>г</b></div>
-                <div class="macro-item">Угли<br><b><span id="carbs">0</span>г</b></div>
+        <div class="card" style="padding: 10px;">
+            <div class="macro-row">
+                <div class="macro-box">Ккал<span class="macro-val" id="resCal">0</span></div>
+                <div class="macro-box">Белок<span class="macro-val" id="resProt">0</span></div>
+                <div class="macro-box">Жиры<span class="macro-val" id="resFat">0</span></div>
             </div>
         </div>
 
-        <div class="day-nav">
-            <button class="nav-btn" onclick="changeDay(-1)">❮</button>
-            <div style="font-weight: bold; font-size: 18px;">День <span id="currentDayNum">1</span></div>
-            <button class="nav-btn" onclick="changeDay(1)">❯</button>
+        <div style="display:flex; justify-content:center; gap:10px; margin-bottom:15px;">
+            <button class="btn btn-outline" style="width:auto; padding:8px 15px; margin:0;" onclick="showDay(1)">День 1</button>
+            <button class="btn btn-outline" style="width:auto; padding:8px 15px; margin:0;" onclick="showDay(2)">День 2</button>
+            <button class="btn btn-outline" style="width:auto; padding:8px 15px; margin:0;" onclick="showDay(3)">День 3</button>
         </div>
 
-        <div class="card">
-            <div id="mealPlan"></div>
+        <div id="mealsContainer"></div>
+
+        <button class="btn btn-gold" onclick="goToPage('page4')">👑 Хочу меню на месяц</button>
+    </div>
+
+    <div id="page4" class="page">
+        <div class="card" style="text-align: center; padding: 30px 20px;">
+            <div style="font-size: 50px;">💪</div>
+            <h2>Понравился план?</h2>
+            <p>Это был демо-режим на 3 дня.</p>
+            <p>Чтобы получить <b>полноценный рацион на 30 дней</b> с поддержкой тренера и корректировкой под твои результаты — переходи в личные сообщения.</p>
+            
+            <div class="price-tag">Всего 3 000 ₽</div>
+
+            <a href="https://t.me/leonov_vitaliy48" class="btn btn-gold">✍️ Написать тренеру</a>
+            <button class="btn btn-outline" onclick="goToPage('page3')">Вернуться к меню</button>
         </div>
-        
-        <button class="calc-btn" onclick="reset()" style="background-color: #8e8e93; margin-top: 20px;">🔄 Пересчитать заново</button>
     </div>
 
     <script>
@@ -201,62 +211,49 @@
         tg.expand();
 
         let userCalories = 0;
-        let currentDay = 1;
         
-        // 7 вариантов меню
-        const weeklyMenus = [
-            [ // День 1
-                { type: "Завтрак", name: "Овсянка с ягодами", w: 60, u: "г (сух)" },
-                { type: "Перекус", name: "Яблоко + Орехи", w: 150, u: "г" },
-                { type: "Обед", name: "Гречка + Курица", w: 70, u: "г (сух)" },
-                { type: "Полдник", name: "Творог 5%", w: 150, u: "г" },
-                { type: "Ужин", name: "Рыба белая + Овощи", w: 200, u: "г" }
+        // Данные для меню (по 2 варианта на каждый прием)
+        const menuData = {
+            1: [
+                { type: "Завтрак", 
+                  opt1: {name: "Овсянка с ягодами", w: 60, u: "г (сух)", rec: "Варить на воде/молоке, добавить горсть ягод."},
+                  opt2: {name: "Скрэмбл из яиц", w: 3, u: "шт", rec: "Взбить яйца, жарить на капле масла, помешивая."} 
+                },
+                { type: "Перекус", 
+                  opt1: {name: "Яблоко + Орехи", w: 1, u: "шт", rec: "Орехов 20-30г."},
+                  opt2: {name: "Греческий йогурт", w: 150, u: "г", rec: "Без добавок."} 
+                },
+                { type: "Обед", 
+                  opt1: {name: "Гречка + Курица", w: 70, u: "г (сух)", rec: "Филе тушить или варить. Крупу отварить."},
+                  opt2: {name: "Рис + Индейка", w: 70, u: "г (сух)", rec: "Индейку нарезать, тушить с овощами."} 
+                },
+                { type: "Ужин", 
+                  opt1: {name: "Белая рыба + Салат", w: 200, u: "г", rec: "Рыбу запечь в фольге (20 мин при 180С)."},
+                  opt2: {name: "Творог 5%", w: 180, u: "г", rec: "Можно добавить сахзам или корицу."} 
+                }
             ],
-            [ // День 2
-                { type: "Завтрак", name: "Омлет из 3 яиц", w: 3, u: "шт" },
-                { type: "Перекус", name: "Груша", w: 1, u: "шт" },
-                { type: "Обед", name: "Рис + Говядина", w: 70, u: "г (сух)" },
-                { type: "Полдник", name: "Йогурт натуральный", w: 200, u: "г" },
-                { type: "Ужин", name: "Салат с тунцом", w: 200, u: "г" }
+            2: [
+                 { type: "Завтрак", opt1: {name: "Омлет с овощами", w: 3, u: "шт", rec: "Смешать с помидорами, под крышкой 5 мин."}, opt2: {name: "Гранола", w: 60, u: "г", rec: "Залить молоком или йогуртом."} },
+                 { type: "Перекус", opt1: {name: "Банан", w: 1, u: "шт", rec: ""}, opt2: {name: "Кефир", w: 250, u: "мл", rec: "1% или 2.5%"} },
+                 { type: "Обед", opt1: {name: "Макароны т/с + Говядина", w: 70, u: "г (сух)", rec: "Говядину тушить 1.5ч до мягкости."}, opt2: {name: "Булгур + Котлеты", w: 70, u: "г (сух)", rec: "Котлеты на пару или в духовке."} },
+                 { type: "Ужин", opt1: {name: "Салат с Тунцом", w: 1, u: "порция", rec: "Тунец в с/с + огурец + листья салата."}, opt2: {name: "Куриное филе + Брокколи", w: 150, u: "г", rec: "Все отварить."} }
             ],
-            [ // День 3
-                { type: "Завтрак", name: "Сырники (ПП)", w: 200, u: "г" },
-                { type: "Перекус", name: "Апельсин", w: 1, u: "шт" },
-                { type: "Обед", name: "Макароны т/с + Индейка", w: 70, u: "г (сух)" },
-                { type: "Полдник", name: "Кефир", w: 250, u: "мл" },
-                { type: "Ужин", name: "Куриная грудка + Салат", w: 200, u: "г" }
-            ],
-            [ // День 4
-                { type: "Завтрак", name: "Гранола с молоком", w: 60, u: "г" },
-                { type: "Перекус", name: "Банан", w: 1, u: "шт" },
-                { type: "Обед", name: "Булгур + Котлеты (пар)", w: 70, u: "г (сух)" },
-                { type: "Полдник", name: "Протеиновый батончик", w: 1, u: "шт" },
-                { type: "Ужин", name: "Омлет с овощами", w: 200, u: "г" }
-            ],
-            [ // День 5
-                { type: "Завтрак", name: "Тосты с авокадо", w: 2, u: "шт" },
-                { type: "Перекус", name: "Киви", w: 2, u: "шт" },
-                { type: "Обед", name: "Пюре + Рыба", w: 200, u: "г" },
-                { type: "Полдник", name: "Ряженка", w: 250, u: "мл" },
-                { type: "Ужин", name: "Творог зерненый", w: 150, u: "г" }
-            ],
-            [ // День 6
-                { type: "Завтрак", name: "Каша пшенная", w: 60, u: "г (сух)" },
-                { type: "Перекус", name: "Грейпфрут", w: 1, u: "шт" },
-                { type: "Обед", name: "Суп куриный + Хлеб", w: 300, u: "мл" },
-                { type: "Полдник", name: "Орехи (микс)", w: 30, u: "г" },
-                { type: "Ужин", name: "Кальмары / Морепродукты", w: 200, u: "г" }
-            ],
-            [ // День 7
-                { type: "Завтрак", name: "Блины (на ц/з муке)", w: 150, u: "г" },
-                { type: "Перекус", name: "Ягоды", w: 150, u: "г" },
-                { type: "Обед", name: "Плов с курицей", w: 250, u: "г" },
-                { type: "Полдник", name: "Творожная запеканка", w: 150, u: "г" },
-                { type: "Ужин", name: "Салат Греческий", w: 200, u: "г" }
+            3: [
+                 { type: "Завтрак", opt1: {name: "Сырники (ПП)", w: 180, u: "г", rec: "На рисовой муке, жарить на а/п сковороде."}, opt2: {name: "Тосты с авокадо", w: 2, u: "шт", rec: "Хлеб цельнозерновой + половина авокадо."} },
+                 { type: "Перекус", opt1: {name: "Апельсин", w: 1, u: "шт", rec: ""}, opt2: {name: "Горький шоколад", w: 20, u: "г", rec: "К чаю."} },
+                 { type: "Обед", opt1: {name: "Пюре + Рыбная котлета", w: 200, u: "г", rec: "Пюре на воде с молоком, без масла."}, opt2: {name: "Плов с курицей", w: 250, u: "г", rec: "Готовить с минимумом масла."} },
+                 { type: "Ужин", opt1: {name: "Кальмары / Морепродукты", w: 200, u: "г", rec: "Отварить 3 мин, сбрызнуть лимоном."}, opt2: {name: "Салат Греческий", w: 250, u: "г", rec: "Брынза, маслины, овощи, масло."} }
             ]
-        ];
+        };
 
-        function calculate() {
+        // Навигация
+        function goToPage(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active-page'));
+            document.getElementById(pageId).classList.add('active-page');
+            window.scrollTo(0, 0);
+        }
+
+        function calculateAndGo() {
             const gender = document.getElementById('gender').value;
             const weight = parseFloat(document.getElementById('weight').value);
             const height = parseFloat(document.getElementById('height').value);
@@ -264,7 +261,10 @@
             const activity = parseFloat(document.getElementById('activity').value);
             const goal = document.getElementById('goal').value;
 
-            if (!weight || !height || !age) { alert("Заполни все поля!"); return; }
+            if (!weight || !height || !age) {
+                alert("Пожалуйста, заполните все поля");
+                return;
+            }
 
             let bmr = (gender === 'male') 
                 ? (10 * weight + 6.25 * height - 5 * age + 5)
@@ -276,53 +276,71 @@
 
             userCalories = Math.round(tdee);
 
-            document.getElementById('totalCals').innerText = userCalories;
-            document.getElementById('protein').innerText = Math.round((userCalories * 0.3) / 4);
-            document.getElementById('fat').innerText = Math.round((userCalories * 0.3) / 9);
-            document.getElementById('carbs').innerText = Math.round((userCalories * 0.4) / 4);
-
-            document.getElementById('inputForm').style.display = 'none';
-            document.getElementById('result').style.display = 'block';
-            document.getElementById('mainTitle').innerText = "Твой результат";
-
-            renderDay(1);
+            // Обновляем шапку БЖУ
+            document.getElementById('resCal').innerText = userCalories;
+            document.getElementById('resProt').innerText = Math.round((userCalories * 0.3) / 4);
+            document.getElementById('resFat').innerText = Math.round((userCalories * 0.3) / 9);
+            
+            showDay(1); // Показываем 1 день
+            goToPage('page3');
         }
 
-        function changeDay(delta) {
-            currentDay += delta;
-            if (currentDay < 1) currentDay = 1;
-            if (currentDay > 30) currentDay = 30;
-            renderDay(currentDay);
-        }
+        // Рендер меню
+        function showDay(dayNum) {
+            const container = document.getElementById('mealsContainer');
+            container.innerHTML = ''; // Очистить
+            
+            const dayMeals = menuData[dayNum];
+            const ratio = userCalories / 2000; // Коэффициент
 
-        function renderDay(dayNum) {
-            document.getElementById('currentDayNum').innerText = dayNum;
-            const menuIndex = (dayNum - 1) % 7; 
-            const menu = weeklyMenus[menuIndex];
-            const ratio = userCalories / 2000;
-
-            let html = '';
-            menu.forEach(item => {
-                let finalWeight = item.w;
-                if (item.u.includes('г') || item.u.includes('мл')) {
-                    finalWeight = Math.round(item.w * ratio);
-                }
-                html += `
-                <div class="meal-row">
-                    <div class="meal-type">${item.type}</div>
-                    <div class="meal-name">${item.name}</div>
-                    <div class="meal-weight">${finalWeight} ${item.u}</div>
-                </div>`;
+            dayMeals.forEach((meal, index) => {
+                // Создаем уникальный ID для каждого приема пищи, чтобы работала кнопка замены
+                const uniqueId = `d${dayNum}_m${index}`;
+                
+                // По умолчанию показываем опцию 1
+                container.innerHTML += createMealHTML(meal, ratio, uniqueId, 1);
             });
-            document.getElementById('mealPlan').innerHTML = html;
         }
 
-        function reset() {
-            document.getElementById('inputForm').style.display = 'block';
-            document.getElementById('result').style.display = 'none';
-            document.getElementById('mainTitle').innerText = "🍏 Составь рацион";
-            currentDay = 1;
+        function createMealHTML(meal, ratio, id, activeOpt) {
+            const item = (activeOpt === 1) ? meal.opt1 : meal.opt2;
+            
+            // Расчет веса
+            let weight = item.w;
+            if (item.u.includes('г') || item.u.includes('мл')) {
+                weight = Math.round(item.w * ratio);
+            }
+
+            return `
+            <div class="meal-card" id="${id}">
+                <div class="meal-header">
+                    <span class="meal-title" style="color:#007aff">${meal.type}</span>
+                    <button class="swap-btn" onclick="toggleMeal('${id}', ${activeOpt})">🔄</button>
+                </div>
+                <div class="meal-header" style="margin-top:5px;">
+                    <span class="meal-title">${item.name}</span>
+                    <span class="meal-weight">${weight} ${item.u}</span>
+                </div>
+                <div class="meal-recipe">👨‍🍳 ${item.rec}</div>
+                <div style="display:none" data-json='${JSON.stringify(meal)}'></div>
+            </div>`;
         }
+
+        // Функция замены (Свап)
+        window.toggleMeal = function(id, currentOpt) {
+            // Находим карточку
+            const card = document.getElementById(id);
+            // Достаем спрятанные данные всего приема пищи
+            const mealData = JSON.parse(card.querySelector('div[data-json]').innerText);
+            const ratio = userCalories / 2000;
+            
+            // Меняем 1 на 2, или 2 на 1
+            const newOpt = (currentOpt === 1) ? 2 : 1;
+            
+            // Перерисовываем карточку (outerHTML заменяет сам элемент)
+            card.outerHTML = createMealHTML(mealData, ratio, id, newOpt);
+        }
+
     </script>
 </body>
 </html>
