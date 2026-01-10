@@ -118,4 +118,211 @@
             align-items: center;
             margin-bottom: 15px;
             background: var(--secondary-bg);
-            padding:
+            padding: 10px;
+            border-radius: 12px;
+        }
+        .nav-btn {
+            width: 40px;
+            height: 40px;
+            border: none;
+            background: #ddd;
+            border-radius: 50%;
+            font-size: 20px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <h1 id="mainTitle">🍏 Составь рацион</h1>
+    
+    <div class="card" id="inputForm">
+        <label>Твой пол:</label>
+        <select id="gender"><option value="male">Мужской</option><option value="female">Женский</option></select>
+
+        <label>Вес (кг):</label>
+        <input type="number" id="weight" placeholder="70">
+
+        <label>Рост (см):</label>
+        <input type="number" id="height" placeholder="175">
+
+        <label>Возраст:</label>
+        <input type="number" id="age" placeholder="25">
+
+        <label>Цель:</label>
+        <select id="goal">
+            <option value="lose">Похудение</option>
+            <option value="maintain">Поддержание</option>
+            <option value="gain">Набор массы</option>
+        </select>
+
+        <label>Активность:</label>
+        <select id="activity">
+            <option value="1.2">Сидячий</option>
+            <option value="1.375">Легкая (1-3 трен.)</option>
+            <option value="1.55">Средняя (3-5 трен.)</option>
+            <option value="1.725">Высокая (6-7 трен.)</option>
+        </select>
+
+        <button class="calc-btn" onclick="calculate()">🚀 Рассчитать бесплатно</button>
+    </div>
+
+    <div class="result-box" id="result">
+        
+        <a href="https://t.me/leonov_vitaliy48" class="premium-btn">
+            👑 Индивидуальный план
+            <span class="premium-subtext">С поддержкой тренера — 3000₽</span>
+        </a>
+        
+        <div class="card" style="margin-top: 15px;">
+            <h2 style="margin-bottom: 5px;">Норма: <span id="totalCals">0</span> ккал</h2>
+            <div class="macro-grid">
+                <div class="macro-item">Белки<br><b><span id="protein">0</span>г</b></div>
+                <div class="macro-item">Жиры<br><b><span id="fat">0</span>г</b></div>
+                <div class="macro-item">Угли<br><b><span id="carbs">0</span>г</b></div>
+            </div>
+        </div>
+
+        <div class="day-nav">
+            <button class="nav-btn" onclick="changeDay(-1)">❮</button>
+            <div style="font-weight: bold; font-size: 18px;">День <span id="currentDayNum">1</span></div>
+            <button class="nav-btn" onclick="changeDay(1)">❯</button>
+        </div>
+
+        <div class="card">
+            <div id="mealPlan"></div>
+        </div>
+        
+        <button class="calc-btn" onclick="reset()" style="background-color: #8e8e93; margin-top: 20px;">🔄 Пересчитать заново</button>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        let userCalories = 0;
+        let currentDay = 1;
+        
+        // 7 вариантов меню
+        const weeklyMenus = [
+            [ // День 1
+                { type: "Завтрак", name: "Овсянка с ягодами", w: 60, u: "г (сух)" },
+                { type: "Перекус", name: "Яблоко + Орехи", w: 150, u: "г" },
+                { type: "Обед", name: "Гречка + Курица", w: 70, u: "г (сух)" },
+                { type: "Полдник", name: "Творог 5%", w: 150, u: "г" },
+                { type: "Ужин", name: "Рыба белая + Овощи", w: 200, u: "г" }
+            ],
+            [ // День 2
+                { type: "Завтрак", name: "Омлет из 3 яиц", w: 3, u: "шт" },
+                { type: "Перекус", name: "Груша", w: 1, u: "шт" },
+                { type: "Обед", name: "Рис + Говядина", w: 70, u: "г (сух)" },
+                { type: "Полдник", name: "Йогурт натуральный", w: 200, u: "г" },
+                { type: "Ужин", name: "Салат с тунцом", w: 200, u: "г" }
+            ],
+            [ // День 3
+                { type: "Завтрак", name: "Сырники (ПП)", w: 200, u: "г" },
+                { type: "Перекус", name: "Апельсин", w: 1, u: "шт" },
+                { type: "Обед", name: "Макароны т/с + Индейка", w: 70, u: "г (сух)" },
+                { type: "Полдник", name: "Кефир", w: 250, u: "мл" },
+                { type: "Ужин", name: "Куриная грудка + Салат", w: 200, u: "г" }
+            ],
+            [ // День 4
+                { type: "Завтрак", name: "Гранола с молоком", w: 60, u: "г" },
+                { type: "Перекус", name: "Банан", w: 1, u: "шт" },
+                { type: "Обед", name: "Булгур + Котлеты (пар)", w: 70, u: "г (сух)" },
+                { type: "Полдник", name: "Протеиновый батончик", w: 1, u: "шт" },
+                { type: "Ужин", name: "Омлет с овощами", w: 200, u: "г" }
+            ],
+            [ // День 5
+                { type: "Завтрак", name: "Тосты с авокадо", w: 2, u: "шт" },
+                { type: "Перекус", name: "Киви", w: 2, u: "шт" },
+                { type: "Обед", name: "Пюре + Рыба", w: 200, u: "г" },
+                { type: "Полдник", name: "Ряженка", w: 250, u: "мл" },
+                { type: "Ужин", name: "Творог зерненый", w: 150, u: "г" }
+            ],
+            [ // День 6
+                { type: "Завтрак", name: "Каша пшенная", w: 60, u: "г (сух)" },
+                { type: "Перекус", name: "Грейпфрут", w: 1, u: "шт" },
+                { type: "Обед", name: "Суп куриный + Хлеб", w: 300, u: "мл" },
+                { type: "Полдник", name: "Орехи (микс)", w: 30, u: "г" },
+                { type: "Ужин", name: "Кальмары / Морепродукты", w: 200, u: "г" }
+            ],
+            [ // День 7
+                { type: "Завтрак", name: "Блины (на ц/з муке)", w: 150, u: "г" },
+                { type: "Перекус", name: "Ягоды", w: 150, u: "г" },
+                { type: "Обед", name: "Плов с курицей", w: 250, u: "г" },
+                { type: "Полдник", name: "Творожная запеканка", w: 150, u: "г" },
+                { type: "Ужин", name: "Салат Греческий", w: 200, u: "г" }
+            ]
+        ];
+
+        function calculate() {
+            const gender = document.getElementById('gender').value;
+            const weight = parseFloat(document.getElementById('weight').value);
+            const height = parseFloat(document.getElementById('height').value);
+            const age = parseFloat(document.getElementById('age').value);
+            const activity = parseFloat(document.getElementById('activity').value);
+            const goal = document.getElementById('goal').value;
+
+            if (!weight || !height || !age) { alert("Заполни все поля!"); return; }
+
+            let bmr = (gender === 'male') 
+                ? (10 * weight + 6.25 * height - 5 * age + 5)
+                : (10 * weight + 6.25 * height - 5 * age - 161);
+
+            let tdee = bmr * activity;
+            if (goal === 'lose') tdee *= 0.8;
+            if (goal === 'gain') tdee *= 1.15;
+
+            userCalories = Math.round(tdee);
+
+            document.getElementById('totalCals').innerText = userCalories;
+            document.getElementById('protein').innerText = Math.round((userCalories * 0.3) / 4);
+            document.getElementById('fat').innerText = Math.round((userCalories * 0.3) / 9);
+            document.getElementById('carbs').innerText = Math.round((userCalories * 0.4) / 4);
+
+            document.getElementById('inputForm').style.display = 'none';
+            document.getElementById('result').style.display = 'block';
+            document.getElementById('mainTitle').innerText = "Твой результат";
+
+            renderDay(1);
+        }
+
+        function changeDay(delta) {
+            currentDay += delta;
+            if (currentDay < 1) currentDay = 1;
+            if (currentDay > 30) currentDay = 30;
+            renderDay(currentDay);
+        }
+
+        function renderDay(dayNum) {
+            document.getElementById('currentDayNum').innerText = dayNum;
+            const menuIndex = (dayNum - 1) % 7; 
+            const menu = weeklyMenus[menuIndex];
+            const ratio = userCalories / 2000;
+
+            let html = '';
+            menu.forEach(item => {
+                let finalWeight = item.w;
+                if (item.u.includes('г') || item.u.includes('мл')) {
+                    finalWeight = Math.round(item.w * ratio);
+                }
+                html += `
+                <div class="meal-row">
+                    <div class="meal-type">${item.type}</div>
+                    <div class="meal-name">${item.name}</div>
+                    <div class="meal-weight">${finalWeight} ${item.u}</div>
+                </div>`;
+            });
+            document.getElementById('mealPlan').innerHTML = html;
+        }
+
+        function reset() {
+            document.getElementById('inputForm').style.display = 'block';
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('mainTitle').innerText = "🍏 Составь рацион";
+            currentDay = 1;
+        }
+    </script>
+</body>
+</html>
