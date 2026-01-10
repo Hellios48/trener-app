@@ -1,1 +1,240 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LeonovTrener Nutrition</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --primary: #007aff; /* Синий цвет Telegram */
+            --bg: #var(--tg-theme-bg-color, #ffffff);
+            --text: #var(--tg-theme-text-color, #000000);
+            --secondary-bg: #var(--tg-theme-secondary-bg-color, #f5f5f5);
+        }
 
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1, h2 { text-align: center; }
+        
+        .card {
+            background: var(--secondary-bg);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        label { display: block; margin-bottom: 5px; font-weight: 500; }
+        
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:active { opacity: 0.8; }
+
+        .result-box {
+            display: none; /* Скрыто до расчета */
+            margin-top: 20px;
+        }
+
+        .macro-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            text-align: center;
+        }
+        
+        .macro-item {
+            background: #fff;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .meal-row {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid #eee;
+            padding: 8px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🍎 Твой План Питания</h1>
+    
+    <div class="card" id="inputForm">
+        <label>Твой пол:</label>
+        <select id="gender">
+            <option value="male">Мужской</option>
+            <option value="female">Женский</option>
+        </select>
+
+        <label>Вес (кг):</label>
+        <input type="number" id="weight" placeholder="Например, 70">
+
+        <label>Рост (см):</label>
+        <input type="number" id="height" placeholder="Например, 175">
+
+        <label>Возраст:</label>
+        <input type="number" id="age" placeholder="Например, 25">
+
+        <label>Цель:</label>
+        <select id="goal">
+            <option value="lose">Похудение (-20%)</option>
+            <option value="maintain">Поддержание</option>
+            <option value="gain">Набор массы (+15%)</option>
+        </select>
+
+        <label>Активность:</label>
+        <select id="activity">
+            <option value="1.2">Сидячий образ жизни</option>
+            <option value="1.375">Легкая (1-3 тренировки)</option>
+            <option value="1.55">Средняя (3-5 тренировок)</option>
+            <option value="1.725">Высокая (6-7 тренировок)</option>
+        </select>
+
+        <button onclick="calculate()">Рассчитать план</button>
+    </div>
+
+    <div class="result-box" id="result">
+        <div class="card">
+            <h2>Твоя норма: <span id="totalCals">0</span> ккал</h2>
+            <div class="macro-grid">
+                <div class="macro-item">🥩 Белки<br><span id="protein">0</span>г</div>
+                <div class="macro-item">🥑 Жиры<br><span id="fat">0</span>г</div>
+                <div class="macro-item">🍚 Угли<br><span id="carbs">0</span>г</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>📅 Пример меню на день</h3>
+            <p style="font-size: 12px; color: #666;">Граммовки адаптированы под твои калории.</p>
+            <div id="mealPlan"></div>
+        </div>
+        
+        <button onclick="reset()" style="background-color: #8e8e93;">Рассчитать заново</button>
+    </div>
+
+    <script>
+        // Инициализация Telegram Mini App
+        const tg = window.Telegram.WebApp;
+        tg.expand(); // Раскрыть на весь экран
+
+        function calculate() {
+            const gender = document.getElementById('gender').value;
+            const weight = parseFloat(document.getElementById('weight').value);
+            const height = parseFloat(document.getElementById('height').value);
+            const age = parseFloat(document.getElementById('age').value);
+            const activity = parseFloat(document.getElementById('activity').value);
+            const goal = document.getElementById('goal').value;
+
+            if (!weight || !height || !age) {
+                alert("Пожалуйста, заполни все поля!");
+                return;
+            }
+
+            // 1. Расчет BMR (Миффлин-Сан Жеор)
+            let bmr;
+            if (gender === 'male') {
+                bmr = 10 * weight + 6.25 * height - 5 * age + 5;
+            } else {
+                bmr = 10 * weight + 6.25 * height - 5 * age - 161;
+            }
+
+            // 2. Учет активности и цели
+            let tdee = bmr * activity;
+            if (goal === 'lose') tdee *= 0.8; // Дефицит 20%
+            if (goal === 'gain') tdee *= 1.15; // Профицит 15%
+
+            const calories = Math.round(tdee);
+
+            // 3. Расчет БЖУ (Стандарт 30/30/40)
+            const p = Math.round((calories * 0.3) / 4);
+            const f = Math.round((calories * 0.3) / 9);
+            const c = Math.round((calories * 0.4) / 4);
+
+            // Вывод цифр
+            document.getElementById('totalCals').innerText = calories;
+            document.getElementById('protein').innerText = p;
+            document.getElementById('fat').innerText = f;
+            document.getElementById('carbs').innerText = c;
+
+            // 4. Генерация меню (Масштабирование базового рациона)
+            generateMenu(calories);
+
+            // Показать результаты
+            document.getElementById('inputForm').style.display = 'none';
+            document.getElementById('result').style.display = 'block';
+        }
+
+        function generateMenu(targetCals) {
+            // Базовое меню рассчитано примерно на 2000 ккал
+            const baseCals = 2000;
+            const ratio = targetCals / baseCals;
+
+            const meals = [
+                { name: "Завтрак", food: "Овсянка на воде", baseWeight: 60, unit: "г (сухой)" },
+                { name: "", food: "Яйца вареные", baseWeight: 2, unit: "шт (не меняется)" },
+                { name: "", food: "Яблоко", baseWeight: 1, unit: "шт" },
+                { name: "Обед", food: "Гречка", baseWeight: 70, unit: "г (сухая)" },
+                { name: "", food: "Куриное филе", baseWeight: 150, unit: "г (сырое)" },
+                { name: "", food: "Овощной салат", baseWeight: 200, unit: "г" },
+                { name: "Полдник", food: "Творог 5%", baseWeight: 150, unit: "г" },
+                { name: "", food: "Орехи", baseWeight: 20, unit: "г" },
+                { name: "Ужин", food: "Рыба белая", baseWeight: 200, unit: "г" },
+                { name: "", food: "Овощи тушеные", baseWeight: 250, unit: "г" }
+            ];
+
+            let html = '';
+            meals.forEach(item => {
+                let weight = item.baseWeight;
+                // Не масштабируем штучные товары, если это яйца (упрощение), 
+                // но для граммов применяем коэффициент
+                if(item.unit.includes("г")) {
+                    weight = Math.round(item.baseWeight * ratio);
+                }
+                
+                html += `
+                <div class="meal-row">
+                    <span style="font-weight:bold; width: 30%">${item.name}</span>
+                    <span style="width: 40%">${item.food}</span>
+                    <span style="width: 30%; text-align:right">${weight} ${item.unit}</span>
+                </div>`;
+            });
+
+            document.getElementById('mealPlan').innerHTML = html;
+        }
+
+        function reset() {
+            document.getElementById('inputForm').style.display = 'block';
+            document.getElementById('result').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
