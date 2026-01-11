@@ -23,7 +23,6 @@
             padding-bottom: 40px;
         }
 
-        /* Стили для экранов (страниц) */
         .page { display: none; animation: fadeIn 0.3s; }
         .active-page { display: block; }
 
@@ -43,12 +42,10 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.05);
         }
 
-        /* Список преимуществ */
         .benefits-list { list-style: none; padding: 0; }
         .benefits-list li { margin-bottom: 15px; font-size: 15px; line-height: 1.5; }
         .check { color: #2ecc71; font-weight: bold; margin-right: 5px; }
 
-        /* Кнопки */
         .btn {
             width: 100%;
             padding: 16px;
@@ -71,7 +68,6 @@
         }
         .btn-outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); }
 
-        /* Формы */
         input, select {
             width: 100%;
             padding: 12px;
@@ -97,7 +93,17 @@
         .meal-recipe { font-size: 13px; color: #666; margin-top: 5px; font-style: italic; line-height: 1.4;}
         
         .swap-btn {
-            background: none; border: none; cursor: pointer; font-size: 18px; padding: 0 0 0 10px;
+            background: #e1f0ff; 
+            border: none; 
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            cursor: pointer; 
+            font-size: 16px; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 10px;
         }
 
         .price-tag {
@@ -212,7 +218,7 @@
 
         let userCalories = 0;
         
-        // Данные для меню (по 2 варианта на каждый прием)
+        // Глобальная база меню
         const menuData = {
             1: [
                 { type: "Завтрак", 
@@ -291,19 +297,21 @@
             container.innerHTML = ''; // Очистить
             
             const dayMeals = menuData[dayNum];
-            const ratio = userCalories / 2000; // Коэффициент
+            const ratio = userCalories / 2000;
 
             dayMeals.forEach((meal, index) => {
-                // Создаем уникальный ID для каждого приема пищи, чтобы работала кнопка замены
-                const uniqueId = `d${dayNum}_m${index}`;
-                
-                // По умолчанию показываем опцию 1
-                container.innerHTML += createMealHTML(meal, ratio, uniqueId, 1);
+                // Генерируем карточку, передаем номер дня и индекс еды
+                container.innerHTML += createMealHTML(dayNum, index, 1, ratio);
             });
         }
 
-        function createMealHTML(meal, ratio, id, activeOpt) {
-            const item = (activeOpt === 1) ? meal.opt1 : meal.opt2;
+        // Создаем HTML карточки (исправленная версия)
+        function createMealHTML(dayNum, mealIndex, activeOpt, ratio) {
+            const mealData = menuData[dayNum][mealIndex];
+            const item = (activeOpt === 1) ? mealData.opt1 : mealData.opt2;
+            
+            // Уникальный ID карточки
+            const uniqueId = `d${dayNum}_m${mealIndex}`;
             
             // Расчет веса
             let weight = item.w;
@@ -312,33 +320,31 @@
             }
 
             return `
-            <div class="meal-card" id="${id}">
+            <div class="meal-card" id="${uniqueId}">
                 <div class="meal-header">
-                    <span class="meal-title" style="color:#007aff">${meal.type}</span>
-                    <button class="swap-btn" onclick="toggleMeal('${id}', ${activeOpt})">🔄</button>
+                    <span class="meal-title" style="color:#007aff">${mealData.type}</span>
+                    <button class="swap-btn" onclick="toggleMeal(${dayNum}, ${mealIndex}, ${activeOpt})">🔄</button>
                 </div>
                 <div class="meal-header" style="margin-top:5px;">
                     <span class="meal-title">${item.name}</span>
                     <span class="meal-weight">${weight} ${item.u}</span>
                 </div>
                 <div class="meal-recipe">👨‍🍳 ${item.rec}</div>
-                <div style="display:none" data-json='${JSON.stringify(meal)}'></div>
             </div>`;
         }
 
-        // Функция замены (Свап)
-        window.toggleMeal = function(id, currentOpt) {
-            // Находим карточку
-            const card = document.getElementById(id);
-            // Достаем спрятанные данные всего приема пищи
-            const mealData = JSON.parse(card.querySelector('div[data-json]').innerText);
+        // Функция замены (Свап) - теперь работает надежно
+        function toggleMeal(dayNum, mealIndex, currentOpt) {
             const ratio = userCalories / 2000;
-            
-            // Меняем 1 на 2, или 2 на 1
             const newOpt = (currentOpt === 1) ? 2 : 1;
             
-            // Перерисовываем карточку (outerHTML заменяет сам элемент)
-            card.outerHTML = createMealHTML(mealData, ratio, id, newOpt);
+            // Генерируем новый HTML для этой карточки
+            const newHTML = createMealHTML(dayNum, mealIndex, newOpt, ratio);
+            
+            // Находим старую карточку и меняем её
+            const uniqueId = `d${dayNum}_m${mealIndex}`;
+            const card = document.getElementById(uniqueId);
+            card.outerHTML = newHTML;
         }
 
     </script>
