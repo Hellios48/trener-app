@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Легкий Путь - Диагностика</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --primary: #27ae60; /* Медицинский зеленый */
+            --bg: #ffffff;
+            --text: #333333;
+            --secondary-bg: #f5fcf9;
+            --btn-text: #ffffff;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            min-height: 90vh;
+        }
+
+        h1, h2 { text-align: center; margin-top: 0; color: #2c3e50; }
+        
+        .card {
+            background: var(--secondary-bg);
+            padding: 25px 20px;
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(39, 174, 96, 0.1);
+            text-align: center;
+            margin-bottom: 20px;
+            border: 1px solid #e0f2e9;
+        }
+
+        /* Прогресс бар */
+        .progress-wrapper {
+            width: 100%;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            margin-bottom: 30px;
+            overflow: hidden;
+            display: none; /* Скрыт на старте */
+        }
+        .progress-fill {
+            height: 100%;
+            background: var(--primary);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        /* Кнопки */
+        .btn {
+            width: 100%;
+            padding: 18px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-bottom: 12px;
+            transition: transform 0.1s;
+        }
+        .btn:active { transform: scale(0.98); }
+
+        .btn-start { background: var(--primary); color: white; font-size: 18px; box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3); }
+        .btn-yes { background: #fff0e6; color: #d35400; border: 2px solid #d35400; }
+        .btn-no { background: #e8f8f5; color: #27ae60; border: 2px solid #27ae60; }
+        
+        .btn-buy {
+            background: linear-gradient(90deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+            text-decoration: none;
+            display: block;
+            margin-top: 15px;
+        }
+
+        /* Вопросы */
+        .quiz-container { display: none; }
+        .question-text { font-size: 20px; font-weight: 600; margin-bottom: 30px; line-height: 1.4; }
+
+        /* Результаты */
+        .result-container { display: none; animation: fadeIn 0.5s; }
+        .risk-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+        }
+        .green { background: #e8f8f5; color: #27ae60; border: 1px solid #27ae60; }
+        .yellow { background: #fef9e7; color: #f39c12; border: 1px solid #f39c12; }
+        .red { background: #fdebd0; color: #c0392b; border: 1px solid #c0392b; }
+
+        .doctor-note {
+            background: #fff;
+            border-left: 4px solid var(--primary);
+            padding: 15px;
+            text-align: left;
+            font-size: 14px;
+            color: #555;
+            margin: 20px 0;
+            font-style: italic;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+    <div id="startScreen">
+        <div style="font-size: 60px; margin-bottom: 10px;">🩺</div>
+        <h1>Сигналы тела</h1>
+        <p style="color:#666; line-height: 1.5; margin-bottom: 30px;">
+            Почему вес стоит, а сил нет?<br>
+            Пройди диагностику из 10 вопросов от эндокринолога проекта «Легкий Путь», чтобы найти скрытые причины.
+        </p>
+        <button class="btn btn-start" onclick="startQuiz()">Начать тест</button>
+        <p style="font-size: 12px; color: #999; margin-top: 20px;">Займет 1 минуту</p>
+    </div>
+
+    <div id="quizScreen" class="quiz-container">
+        <div class="progress-wrapper" id="pWrapper"><div class="progress-fill" id="pFill"></div></div>
+        
+        <div class="card">
+            <div id="qText" class="question-text">Вопрос...</div>
+            <button class="btn btn-yes" onclick="answer(1)">Да, часто / Бывает</button>
+            <button class="btn btn-no" onclick="answer(0)">Нет / Редко</button>
+        </div>
+    </div>
+
+    <div id="resultScreen" class="result-container">
+        <div class="card">
+            <div id="resBadge" class="risk-badge">Результат</div>
+            <h2 id="resTitle" style="margin-bottom: 10px;">Заголовок</h2>
+            <p id="resDesc" style="font-size: 15px; line-height: 1.5;">Описание...</p>
+            
+            <div class="doctor-note">
+                👩‍⚕️ <b>Комментарий врача (Екатерина):</b><br>
+                <span id="docComment">...</span>
+            </div>
+        </div>
+
+        <div class="card" style="border: 2px solid #FFD700; background: #fffdf0;">
+            <h3>🚀 Проект «Легкий Путь»</h3>
+            <p style="font-size: 14px; margin-bottom: 15px;">Старт: <b>23 февраля</b></p>
+            
+            <ul style="text-align: left; padding-left: 20px; font-size: 14px; color: #444; margin-bottom: 20px;">
+                <li style="margin-bottom:8px;">Разбор анализов врачом</li>
+                <li style="margin-bottom:8px;">Меню для снижения воспаления</li>
+                <li>Тренировки без стресса</li>
+            </ul>
+
+            <a id="buyLink" href="#" class="btn btn-buy">Записаться в поток</a>
+        </div>
+        
+        <button class="btn" style="background:none; color:#999; font-size:14px;" onclick="location.reload()">🔄 Пройти заново</button>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        // БАЗА ВОПРОСОВ (На инсулинорезистентность, щитовидку, кортизол)
+        const questions = [
+            "Тянет ли на сладкое или мучное сразу после еды?",
+            "Чувствуешь ли сонливость и упадок сил в середине дня (после обеда)?",
+            "Сложно ли просыпаться по утрам, даже если спал 7-8 часов?",
+            "Есть ли отеки на лице или ногах по утрам?",
+            "Бывает ли раздражительность или дрожь в руках, если долго не поешь?",
+            "Беспокоит ли сухость кожи (локти, пятки) или выпадение волос?",
+            "Есть ли лишний вес преимущественно в области живота («спасательный круг»)?",
+            "Сложно ли сбросить вес, даже если сидишь на диете?",
+            "Просыпаешься ли ночью (особенно в 3-4 утра)?",
+            "Есть ли потемнение кожи на локтях, шее или в складках тела?"
+        ];
+
+        let currentQ = 0;
+        let score = 0;
+
+        function startQuiz() {
+            document.getElementById('startScreen').style.display = 'none';
+            document.getElementById('quizScreen').style.display = 'block';
+            document.getElementById('pWrapper').style.display = 'block';
+            showQuestion();
+        }
+
+        function showQuestion() {
+            // Обновляем текст и прогресс
+            document.getElementById('qText').innerText = questions[currentQ];
+            const percent = ((currentQ) / questions.length) * 100;
+            document.getElementById('pFill').style.width = percent + '%';
+        }
+
+        function answer(val) {
+            score += val;
+            currentQ++;
+
+            if (currentQ < questions.length) {
+                showQuestion();
+            } else {
+                showResult();
+            }
+        }
+
+        function showResult() {
+            document.getElementById('quizScreen').style.display = 'none';
+            document.getElementById('pWrapper').style.display = 'none';
+            document.getElementById('resultScreen').style.display = 'block';
+            window.scrollTo(0,0);
+
+            const badge = document.getElementById('resBadge');
+            const title = document.getElementById('resTitle');
+            const desc = document.getElementById('resDesc');
+            const doc = document.getElementById('docComment');
+            const link = document.getElementById('buyLink');
+
+            let messageText = "";
+
+            if (score <= 2) {
+                // ЗЕЛЕНАЯ ЗОНА
+                badge.className = "risk-badge green";
+                badge.innerText = "Зеленая зона ✅";
+                title.innerText = "Организм в порядке";
+                desc.innerText = "Похоже, серьезных метаболических сбоев нет. Лишний вес (если есть) уйдет легко при правильной системе.";
+                doc.innerText = "«Отличные показатели! Тебе подойдет наша базовая программа, чтобы подтянуть тело и улучшить рельеф без жестких ограничений.»";
+                messageText = "Привет! Прошел тест, у меня Зеленая зона. Хочу узнать про участие в проекте.";
+            } 
+            else if (score <= 5) {
+                // ЖЕЛТАЯ ЗОНА
+                badge.className = "risk-badge yellow";
+                badge.innerText = "Желтая зона ⚠️";
+                title.innerText = "Есть дефициты";
+                desc.innerText = "Твой организм подает сигналы SOS. Возможно, есть дефицит витаминов или начинающаяся инсулинорезистентность.";
+                doc.innerText = "«Внимание! Обычные диеты могут усугубить состояние. Нам нужно скорректировать питание, чтобы убрать отеки и вернуть энергию.»";
+                messageText = "Привет! Прошел тест, у меня Желтая зона (риск дефицитов). Хочу на проект к врачу.";
+            } 
+            else {
+                // КРАСНАЯ ЗОНА
+                badge.className = "risk-badge red";
+                badge.innerText = "Красная зона 🚨";
+                title.innerText = "Высокий риск сбоев";
+                desc.innerText = "Симптомы указывают на возможные проблемы с щитовидной железой, кортизолом или инсулином. Вес может стоять из-за этого.";
+                doc.innerText = "«Я настоятельно рекомендую сдать анализы (список дадим на проекте). Худеть нужно только под контролем, чтобы не навредить гормональной системе.»";
+                messageText = "Привет! Прошел тест, у меня Красная зона (высокий риск). Мне срочно нужно на проект с разбором анализов.";
+            }
+
+            // Формируем ссылку на личку с готовым текстом
+            link.href = "https://t.me/leonov_vitaliy48?text=" + encodeURIComponent(messageText);
+        }
+    </script>
+</body>
+</html>
