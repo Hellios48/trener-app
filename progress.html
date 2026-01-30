@@ -1,1 +1,300 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мой Прогресс</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #27ae60;
+            --bg: #ffffff;
+            --text: #333333;
+            --secondary-bg: #f5fcf9;
+            --card-bg: #ffffff;
+        }
 
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f2f5f7;
+            color: var(--text);
+            margin: 0;
+            padding: 15px;
+        }
+
+        h1 { font-size: 22px; margin: 10px 0 20px 0; text-align: center; color: #2c3e50; }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 15px;
+        }
+
+        .stats-row { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .stat-item { text-align: center; width: 48%; background: var(--secondary-bg); padding: 15px 10px; border-radius: 12px; border: 1px solid #e0f2e9; }
+        .stat-val { font-size: 24px; font-weight: 800; color: var(--primary); }
+        .stat-label { font-size: 13px; color: #666; margin-top: 5px; }
+
+        .chart-container { position: relative; height: 250px; width: 100%; }
+
+        .fab {
+            position: fixed; bottom: 20px; right: 20px; background: var(--primary); color: white;
+            width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 30px; box-shadow: 0 4px 15px rgba(39, 174, 96, 0.4); cursor: pointer; z-index: 100; border: none;
+        }
+
+        .modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 200; align-items: center; justify-content: center;
+        }
+        .modal.active { display: flex; }
+        .modal-content { background: white; padding: 25px; border-radius: 20px; width: 85%; max-width: 350px; animation: slideUp 0.3s; }
+
+        input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 10px; font-size: 16px; box-sizing: border-box; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 14px; }
+
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 5px; }
+        .btn-save { background: var(--primary); color: white; }
+        .btn-cancel { background: transparent; color: #888; margin-top: 10px; }
+
+        .btn-report {
+            background: linear-gradient(90deg, #2980b9 0%, #3498db 100%); 
+            color: white; margin-top: 10px; font-size: 14px; padding: 12px;
+            box-shadow: 0 4px 10px rgba(52, 152, 219, 0.3);
+        }
+
+        .history-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #eee; font-size: 14px; }
+        .history-item:last-child { border: none; }
+        .del-btn { color: #e74c3c; cursor: pointer; font-weight: bold; padding-left: 10px;}
+        
+        /* Поле имени */
+        .name-input {
+            border: 2px solid var(--primary); background: #f0fff4; color: #000; font-weight: bold; text-align: center;
+        }
+
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <h1>📉 Дневник Успеха</h1>
+
+    <div class="card" id="nameCard">
+        <label>Как тебя зовут?</label>
+        <input type="text" id="userName" class="name-input" placeholder="Имя Фамилия" onchange="saveName()">
+        <p style="font-size:12px; color:#888; margin:0; text-align:center;">Введи один раз, я запомню</p>
+    </div>
+
+    <div class="stats-row">
+        <div class="stat-item">
+            <div id="totalLost" class="stat-val">0</div>
+            <div class="stat-label">Сброшено (кг)</div>
+        </div>
+        <div class="stat-item">
+            <div id="currentWeight" class="stat-val">--</div>
+            <div class="stat-label">Текущий вес</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="chart-container">
+            <canvas id="progressChart"></canvas>
+        </div>
+    </div>
+
+    <div class="card" style="text-align: center;">
+        <p style="margin: 0 0 10px 0; font-size: 14px; color: #666;">Зафиксировать результат в базе тренера 👇</p>
+        <button id="sendBtn" class="btn btn-report" onclick="sendReport()">☁️ Отправить в таблицу</button>
+    </div>
+
+    <div class="card">
+        <h3 style="margin-top:0;">История замеров</h3>
+        <div id="historyList"></div>
+    </div>
+
+    <button class="fab" onclick="openModal()">+</button>
+
+    <div id="entryModal" class="modal">
+        <div class="modal-content">
+            <h2 style="text-align:center; margin-top:0;">Новый замер</h2>
+            <label>Дата</label>
+            <input type="date" id="inpDate">
+            <label>Вес (кг)</label>
+            <input type="number" id="inpWeight" placeholder="Например: 75.5" step="0.1">
+            <label>Талия (см)</label>
+            <input type="number" id="inpWaist" placeholder="Например: 80">
+            <button class="btn btn-save" onclick="saveEntry()">Сохранить</button>
+            <button class="btn btn-cancel" onclick="closeModal()">Отмена</button>
+        </div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        // --- ВСТАВЬ СЮДА СВОЮ ССЫЛКУ ИЗ ГУГЛ СКРИПТА ---
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyezX0G9usrrlKuEHO8ev59BdE3vop41nV3JWOJzNyVTHaoSpcYovbKfHBmjfNLXQw/exec"; 
+        // -----------------------------------------------
+
+        let entries = JSON.parse(localStorage.getItem('leonov_progress')) || [];
+        let savedName = localStorage.getItem('leonov_username') || "";
+        let chartInstance = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('inpDate').valueAsDate = new Date();
+            
+            if(savedName) {
+                document.getElementById('userName').value = savedName;
+                document.getElementById('nameCard').style.display = 'none'; // Скрываем, если имя уже есть
+            }
+
+            updateUI();
+        });
+
+        function saveName() {
+            const name = document.getElementById('userName').value;
+            if(name) {
+                localStorage.setItem('leonov_username', name);
+                savedName = name;
+                document.getElementById('nameCard').style.display = 'none'; // Скрываем после ввода
+            }
+        }
+
+        function updateUI() {
+            entries.sort((a, b) => new Date(a.date) - new Date(b.date));
+            localStorage.setItem('leonov_progress', JSON.stringify(entries));
+            calculateStats();
+            renderChart();
+            renderHistory();
+        }
+
+        function calculateStats() {
+            if (entries.length === 0) {
+                document.getElementById('currentWeight').innerText = "--";
+                document.getElementById('totalLost').innerText = "0";
+                return;
+            }
+            const start = entries[0].weight;
+            const current = entries[entries.length - 1].weight;
+            const diff = (start - current).toFixed(1);
+            document.getElementById('currentWeight').innerText = current + " кг";
+            const diffEl = document.getElementById('totalLost');
+            
+            if (diff > 0) { diffEl.innerText = "-" + diff; diffEl.style.color = "#27ae60"; } 
+            else if (diff < 0) { diffEl.innerText = "+" + Math.abs(diff); diffEl.style.color = "#c0392b"; } 
+            else { diffEl.innerText = "0"; diffEl.style.color = "#333"; }
+        }
+
+        function renderHistory() {
+            const list = document.getElementById('historyList');
+            list.innerHTML = "";
+            if (entries.length === 0) {
+                list.innerHTML = '<p style="text-align:center; color:#999; font-size:13px;">Пока пусто.</p>';
+                return;
+            }
+            [...entries].reverse().forEach((entry, index) => {
+                const realIndex = entries.length - 1 - index;
+                const dateStr = new Date(entry.date).toLocaleDateString('ru-RU', {day: 'numeric', month: 'long'});
+                const div = document.createElement('div');
+                div.className = 'history-item';
+                div.innerHTML = `<div><b>${dateStr}</b></div><div>${entry.weight} кг</div><div class="del-btn" onclick="deleteEntry(${realIndex})">✕</div>`;
+                list.appendChild(div);
+            });
+        }
+
+        function renderChart() {
+            const ctx = document.getElementById('progressChart').getContext('2d');
+            const dates = entries.map(e => new Date(e.date).toLocaleDateString('ru-RU', {day: '2-digit', month: '2-digit'}));
+            const weights = entries.map(e => e.weight);
+
+            if (chartInstance) chartInstance.destroy();
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: [{
+                        label: 'Вес (кг)', data: weights, borderColor: '#27ae60', backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                        borderWidth: 3, tension: 0.4, pointRadius: 4, fill: true
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }, scales: { y: { grace: '5%' } }
+                }
+            });
+        }
+
+        function openModal() { document.getElementById('entryModal').classList.add('active'); }
+        function closeModal() { document.getElementById('entryModal').classList.remove('active'); }
+
+        function saveEntry() {
+            const date = document.getElementById('inpDate').value;
+            const weight = parseFloat(document.getElementById('inpWeight').value);
+            const waist = document.getElementById('inpWaist').value;
+
+            if (!date || !weight) { alert("Укажите дату и вес!"); return; }
+
+            const existingIndex = entries.findIndex(e => e.date === date);
+            if (existingIndex >= 0) { entries[existingIndex] = { date, weight, waist }; } 
+            else { entries.push({ date, weight, waist }); }
+
+            closeModal();
+            updateUI();
+            document.getElementById('inpWeight').value = "";
+            document.getElementById('inpWaist').value = "";
+        }
+
+        function deleteEntry(index) {
+            if(confirm("Удалить?")) { entries.splice(index, 1); updateUI(); }
+        }
+
+        // --- ОТПРАВКА В ГУГЛ ТАБЛИЦУ ---
+        function sendReport() {
+            if (entries.length === 0) { alert("Нет данных для отправки!"); return; }
+            if (!savedName) { 
+                document.getElementById('nameCard').style.display = 'block';
+                alert("Сначала укажи свое имя сверху!"); 
+                window.scrollTo(0,0);
+                return; 
+            }
+
+            const btn = document.getElementById('sendBtn');
+            btn.innerText = "⏳ Отправка...";
+            btn.disabled = true;
+
+            const lastEntry = entries[entries.length - 1];
+            const firstEntry = entries[0];
+            const loss = (firstEntry.weight - lastEntry.weight).toFixed(1);
+
+            const payload = {
+                name: savedName,
+                startWeight: firstEntry.weight,
+                currentWeight: lastEntry.weight,
+                loss: loss,
+                waist: lastEntry.waist || "--"
+            };
+
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors', // Важно для Гугл Скриптов
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify(payload)
+            })
+            .then(() => {
+                alert("✅ Отчет успешно отправлен тренеру!");
+                btn.innerText = "☁️ Отправить в таблицу";
+                btn.disabled = false;
+            })
+            .catch(err => {
+                alert("Ошибка отправки. Проверь интернет.");
+                btn.innerText = "☁️ Отправить в таблицу";
+                btn.disabled = false;
+            });
+        }
+    </script>
+</body>
+</html>
