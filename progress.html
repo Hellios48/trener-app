@@ -7,85 +7,65 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root {
-            --primary: #27ae60;
-            --bg: #ffffff;
-            --text: #333333;
-            --secondary-bg: #f5fcf9;
-            --card-bg: #ffffff;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background-color: #f2f5f7;
-            color: var(--text);
-            margin: 0;
-            padding: 15px;
-        }
-
-        h1 { font-size: 22px; margin: 10px 0 20px 0; text-align: center; color: #2c3e50; }
-
-        .card {
-            background: var(--card-bg);
-            border-radius: 16px;
-            padding: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            margin-bottom: 15px;
-        }
-
+        :root { --primary: #27ae60; --bg: #f2f5f7; --card-bg: #ffffff; --text: #333; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); padding: 15px; margin: 0; padding-bottom: 80px; }
+        
+        .card { background: var(--card-bg); border-radius: 16px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 15px; }
+        
+        /* Статистика */
         .stats-row { display: flex; justify-content: space-between; margin-bottom: 10px; }
-        .stat-item { text-align: center; width: 48%; background: var(--secondary-bg); padding: 15px 10px; border-radius: 12px; border: 1px solid #e0f2e9; }
+        .stat-item { text-align: center; width: 48%; background: #f5fcf9; padding: 15px 10px; border-radius: 12px; border: 1px solid #e0f2e9; }
         .stat-val { font-size: 24px; font-weight: 800; color: var(--primary); }
         .stat-label { font-size: 13px; color: #666; margin-top: 5px; }
 
-        .chart-container { position: relative; height: 250px; width: 100%; }
+        .chart-container { position: relative; height: 200px; width: 100%; }
 
-        .fab {
-            position: fixed; bottom: 20px; right: 20px; background: var(--primary); color: white;
-            width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            font-size: 30px; box-shadow: 0 4px 15px rgba(39, 174, 96, 0.4); cursor: pointer; z-index: 100; border: none;
-        }
-
-        .modal {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5); z-index: 200; align-items: center; justify-content: center;
-        }
-        .modal.active { display: flex; }
-        .modal-content { background: white; padding: 25px; border-radius: 20px; width: 85%; max-width: 350px; animation: slideUp 0.3s; }
-
-        input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 10px; font-size: 16px; box-sizing: border-box; }
-        label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 14px; }
-
-        .btn { width: 100%; padding: 14px; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 5px; }
+        /* Кнопки */
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-report { background: linear-gradient(90deg, #2980b9 0%, #3498db 100%); color: white; box-shadow: 0 4px 10px rgba(52, 152, 219, 0.3); }
         .btn-save { background: var(--primary); color: white; }
-        .btn-cancel { background: transparent; color: #888; margin-top: 10px; }
-
-        .btn-report {
-            background: linear-gradient(90deg, #2980b9 0%, #3498db 100%); 
-            color: white; margin-top: 10px; font-size: 14px; padding: 12px;
-            box-shadow: 0 4px 10px rgba(52, 152, 219, 0.3);
-        }
-
-        .history-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #eee; font-size: 14px; }
-        .history-item:last-child { border: none; }
-        .del-btn { color: #e74c3c; cursor: pointer; font-weight: bold; padding-left: 10px;}
+        .btn-cancel { background: transparent; color: #888; }
         
-        /* Поле имени */
-        .name-input {
-            border: 2px solid var(--primary); background: #f0fff4; color: #000; font-weight: bold; text-align: center;
-        }
+        .fab { position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px; border-radius: 50%; background: var(--primary); color: white; font-size: 30px; border: none; box-shadow: 0 4px 15px rgba(39, 174, 96, 0.4); z-index: 100; cursor: pointer; }
 
-        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        /* Загрузка фото */
+        .photo-upload-container { border: 2px dashed #bdc3c7; border-radius: 12px; padding: 15px; text-align: center; margin-bottom: 15px; cursor: pointer; transition: 0.2s; }
+        .photo-upload-container.has-file { border-color: var(--primary); background: #e8f8f5; }
+        .photo-icon { font-size: 24px; display: block; margin-bottom: 5px; }
+        .photo-text { font-size: 13px; color: #7f8c8d; }
+        #fileInput { display: none; }
+
+        /* Выпадающий список */
+        select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; font-size: 16px; background: #fff; margin-bottom: 15px; font-weight: bold; color: #2c3e50; }
+
+        /* Модалка */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 200; align-items: center; justify-content: center; }
+        .modal.active { display: flex; }
+        .modal-content { background: white; padding: 25px; border-radius: 20px; width: 85%; max-width: 350px; max-height: 90vh; overflow-y: auto; }
+        
+        input { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 10px; font-size: 16px; box-sizing: border-box; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 14px; }
+        
+        /* Поля имени */
+        .name-input { border: 2px solid var(--primary); background: #f0fff4; color: #000; font-weight: bold; text-align: center; margin-bottom: 10px; }
+        
+        .history-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #eee; font-size: 14px; }
+        .del-btn { color: #e74c3c; cursor: pointer; padding-left: 10px; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <h1>📉 Дневник Успеха</h1>
+    <h2 style="text-align:center; color:#2c3e50; margin: 10px 0;">Дневник Успеха</h2>
 
     <div class="card" id="nameCard">
-        <label>Как тебя зовут?</label>
-        <input type="text" id="userName" class="name-input" placeholder="Имя Фамилия" onchange="saveName()">
-        <p style="font-size:12px; color:#888; margin:0; text-align:center;">Введи один раз, я запомню</p>
+        <label>Твоя Фамилия</label>
+        <input type="text" id="userSurname" class="name-input" placeholder="Иванова" onchange="checkName()">
+        
+        <label>Твое Имя</label>
+        <input type="text" id="userName" class="name-input" placeholder="Екатерина" onchange="checkName()">
+        
+        <button id="saveNameBtn" class="btn btn-save" onclick="saveNameManual()" style="display:none;">Сохранить</button>
+        <p style="font-size:12px; color:#888; margin:10px 0 0 0; text-align:center;">Введи один раз, я запомню</p>
     </div>
 
     <div class="stats-row">
@@ -106,12 +86,29 @@
     </div>
 
     <div class="card" style="text-align: center;">
-        <p style="margin: 0 0 10px 0; font-size: 14px; color: #666;">Зафиксировать результат в базе тренера 👇</p>
-        <button id="sendBtn" class="btn btn-report" onclick="sendReport()">☁️ Отправить в таблицу</button>
+        <h3 style="margin-top:0;">Отправить отчет</h3>
+        
+        <label style="text-align:left;">Тип отчета:</label>
+        <select id="reportType">
+            <option value="Пятничный отчет">📅 Пятничный отчет</option>
+            <option value="СТАРТ СЕЗОНА">🚀 СТАРТ СЕЗОНА (Фото обязательно)</option>
+            <option value="ФИНАЛ СЕЗОНА">🏁 ФИНАЛ СЕЗОНА</option>
+        </select>
+
+        <label for="fileInput" class="photo-upload-container" id="photoLabel">
+            <span class="photo-icon">📸</span>
+            <span class="photo-text" id="photoText">Добавить фото весов / формы</span>
+        </label>
+        <input type="file" id="fileInput" accept="image/*" onchange="handleFileSelect()">
+
+        <button id="sendBtn" class="btn btn-report" onclick="sendReport()">
+            ☁️ Отправить в таблицу
+        </button>
+        <p style="font-size:12px; color:#999; margin-top:10px;">Для старта: фото на весах + фото в зеркале (по желанию)</p>
     </div>
 
     <div class="card">
-        <h3 style="margin-top:0;">История замеров</h3>
+        <h3 style="margin-top:0;">История</h3>
         <div id="historyList"></div>
     </div>
 
@@ -119,13 +116,22 @@
 
     <div id="entryModal" class="modal">
         <div class="modal-content">
-            <h2 style="text-align:center; margin-top:0;">Новый замер</h2>
+            <h3 style="text-align:center; margin-top:0;">Новый замер</h3>
             <label>Дата</label>
             <input type="date" id="inpDate">
-            <label>Вес (кг)</label>
-            <input type="number" id="inpWeight" placeholder="Например: 75.5" step="0.1">
-            <label>Талия (см)</label>
-            <input type="number" id="inpWaist" placeholder="Например: 80">
+            
+            <label>Вес (кг)*</label>
+            <input type="number" id="inpWeight" step="0.1">
+            
+            <label>Обхват груди (см)</label>
+            <input type="number" id="inpChest">
+
+            <label>Обхват талии (см)</label>
+            <input type="number" id="inpWaist">
+            
+            <label>Обхват бедер (см)</label>
+            <input type="number" id="inpHips">
+
             <button class="btn btn-save" onclick="saveEntry()">Сохранить</button>
             <button class="btn btn-cancel" onclick="closeModal()">Отмена</button>
         </div>
@@ -135,31 +141,53 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // --- ВСТАВЬ СЮДА СВОЮ ССЫЛКУ ИЗ ГУГЛ СКРИПТА ---
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyezX0G9usrrlKuEHO8ev59BdE3vop41nV3JWOJzNyVTHaoSpcYovbKfHBmjfNLXQw/exec"; 
-        // -----------------------------------------------
+        // -----------------------------------------------------------
+        // ВСТАВЬ СВОЮ ССЫЛКУ НИЖЕ (ОБЯЗАТЕЛЬНО!)
+        const SCRIPT_URL = "ВСТАВЬ_СЮДА_СВОЮ_ССЫЛКУ_EXEC"; 
+        // -----------------------------------------------------------
 
         let entries = JSON.parse(localStorage.getItem('leonov_progress')) || [];
-        let savedName = localStorage.getItem('leonov_username') || "";
+        // Загружаем имя и фамилию отдельно
+        let savedName = localStorage.getItem('leonov_firstname') || "";
+        let savedSurname = localStorage.getItem('leonov_surname') || "";
+        
         let chartInstance = null;
+        let selectedImageBase64 = null;
 
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('inpDate').valueAsDate = new Date();
             
-            if(savedName) {
+            // Если имя и фамилия сохранены - скрываем блок
+            if(savedName && savedSurname) {
                 document.getElementById('userName').value = savedName;
-                document.getElementById('nameCard').style.display = 'none'; // Скрываем, если имя уже есть
+                document.getElementById('userSurname').value = savedSurname;
+                document.getElementById('nameCard').style.display = 'none';
             }
-
             updateUI();
         });
 
-        function saveName() {
+        // Проверка полей имени для показа кнопки "Сохранить"
+        function checkName() {
             const name = document.getElementById('userName').value;
-            if(name) {
-                localStorage.setItem('leonov_username', name);
+            const surname = document.getElementById('userSurname').value;
+            if (name && surname) {
+                document.getElementById('saveNameBtn').style.display = 'block';
+            }
+        }
+
+        // Ручное сохранение имени (по кнопке)
+        function saveNameManual() {
+            const name = document.getElementById('userName').value.trim();
+            const surname = document.getElementById('userSurname').value.trim();
+            
+            if(name && surname) {
+                localStorage.setItem('leonov_firstname', name);
+                localStorage.setItem('leonov_surname', surname);
                 savedName = name;
-                document.getElementById('nameCard').style.display = 'none'; // Скрываем после ввода
+                savedSurname = surname;
+                document.getElementById('nameCard').style.display = 'none';
+            } else {
+                alert("Заполните Имя и Фамилию!");
             }
         }
 
@@ -191,10 +219,6 @@
         function renderHistory() {
             const list = document.getElementById('historyList');
             list.innerHTML = "";
-            if (entries.length === 0) {
-                list.innerHTML = '<p style="text-align:center; color:#999; font-size:13px;">Пока пусто.</p>';
-                return;
-            }
             [...entries].reverse().forEach((entry, index) => {
                 const realIndex = entries.length - 1 - index;
                 const dateStr = new Date(entry.date).toLocaleDateString('ru-RU', {day: 'numeric', month: 'long'});
@@ -217,14 +241,11 @@
                 data: {
                     labels: dates,
                     datasets: [{
-                        label: 'Вес (кг)', data: weights, borderColor: '#27ae60', backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                        label: 'Вес', data: weights, borderColor: '#27ae60', backgroundColor: 'rgba(39, 174, 96, 0.1)',
                         borderWidth: 3, tension: 0.4, pointRadius: 4, fill: true
                     }]
                 },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { display: false } }, scales: { y: { grace: '5%' } }
-                }
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { grace: '5%' } } }
             });
         }
 
@@ -234,63 +255,120 @@
         function saveEntry() {
             const date = document.getElementById('inpDate').value;
             const weight = parseFloat(document.getElementById('inpWeight').value);
+            const chest = document.getElementById('inpChest').value;
             const waist = document.getElementById('inpWaist').value;
+            const hips = document.getElementById('inpHips').value;
 
             if (!date || !weight) { alert("Укажите дату и вес!"); return; }
 
+            const newEntry = { date, weight, chest, waist, hips };
             const existingIndex = entries.findIndex(e => e.date === date);
-            if (existingIndex >= 0) { entries[existingIndex] = { date, weight, waist }; } 
-            else { entries.push({ date, weight, waist }); }
+            if (existingIndex >= 0) { entries[existingIndex] = newEntry; } 
+            else { entries.push(newEntry); }
 
             closeModal();
             updateUI();
+            
             document.getElementById('inpWeight').value = "";
+            document.getElementById('inpChest').value = "";
             document.getElementById('inpWaist').value = "";
+            document.getElementById('inpHips').value = "";
         }
 
         function deleteEntry(index) {
             if(confirm("Удалить?")) { entries.splice(index, 1); updateUI(); }
         }
 
-        // --- ОТПРАВКА В ГУГЛ ТАБЛИЦУ ---
+        function handleFileSelect() {
+            const file = document.getElementById('fileInput').files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    const MAX_WIDTH = 800;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+
+                    canvas.width = width; canvas.height = height;
+                    ctx.drawImage(img, 0, 0, width, height);
+                    selectedImageBase64 = canvas.toDataURL('image/jpeg', 0.7);
+                    
+                    document.getElementById('photoLabel').classList.add('has-file');
+                    document.getElementById('photoText').innerText = "Фото готово ✅";
+                }
+                img.src = event.target.result;
+            }
+            reader.readAsDataURL(file);
+        }
+
         function sendReport() {
-            if (entries.length === 0) { alert("Нет данных для отправки!"); return; }
-            if (!savedName) { 
+            if (entries.length === 0) { alert("Сначала добавь замер (кнопка +)!"); return; }
+            
+            // Если переменные пусты, пробуем взять из полей
+            if (!savedName || !savedSurname) {
+                savedName = document.getElementById('userName').value.trim();
+                savedSurname = document.getElementById('userSurname').value.trim();
+            }
+
+            if (!savedName || !savedSurname) { 
                 document.getElementById('nameCard').style.display = 'block';
-                alert("Сначала укажи свое имя сверху!"); 
-                window.scrollTo(0,0);
+                alert("Пожалуйста, укажи Имя и Фамилию сверху!"); 
+                window.scrollTo(0,0); 
                 return; 
             }
 
+            // Сохраняем, если вдруг не было сохранено
+            localStorage.setItem('leonov_firstname', savedName);
+            localStorage.setItem('leonov_surname', savedSurname);
+
+            // ФОРМИРУЕМ ПОЛНОЕ ИМЯ
+            const fullName = savedSurname + " " + savedName; // Иванова Екатерина
+
+            const reportType = document.getElementById('reportType').value;
+            if (reportType === "СТАРТ СЕЗОНА" && !selectedImageBase64) {
+                alert("❗ Для СТАРТА СЕЗОНА фото обязательно!");
+                return;
+            }
+
             const btn = document.getElementById('sendBtn');
-            btn.innerText = "⏳ Отправка...";
+            btn.innerText = "⏳ Загрузка...";
             btn.disabled = true;
 
             const lastEntry = entries[entries.length - 1];
-            const firstEntry = entries[0];
-            const loss = (firstEntry.weight - lastEntry.weight).toFixed(1);
 
             const payload = {
-                name: savedName,
-                startWeight: firstEntry.weight,
-                currentWeight: lastEntry.weight,
-                loss: loss,
-                waist: lastEntry.waist || "--"
+                name: fullName, // Отправляем склеенное имя
+                reportType: reportType,
+                weight: lastEntry.weight,
+                chest: lastEntry.chest || "-",
+                waist: lastEntry.waist || "-",
+                hips: lastEntry.hips || "-",
+                image: selectedImageBase64 || ""
             };
 
             fetch(SCRIPT_URL, {
                 method: 'POST',
-                mode: 'no-cors', // Важно для Гугл Скриптов
+                mode: 'no-cors',
                 headers: { 'Content-Type': 'text/plain' },
                 body: JSON.stringify(payload)
             })
             .then(() => {
-                alert("✅ Отчет успешно отправлен тренеру!");
+                alert("✅ Отчет отправлен! " + reportType);
+                selectedImageBase64 = null;
+                document.getElementById('photoLabel').classList.remove('has-file');
+                document.getElementById('photoText').innerText = "Добавить фото";
+                document.getElementById('fileInput').value = "";
                 btn.innerText = "☁️ Отправить в таблицу";
                 btn.disabled = false;
             })
             .catch(err => {
-                alert("Ошибка отправки. Проверь интернет.");
+                alert("Ошибка отправки.");
                 btn.innerText = "☁️ Отправить в таблицу";
                 btn.disabled = false;
             });
